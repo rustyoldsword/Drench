@@ -1,0 +1,107 @@
+# Drench - Wet Skin Framework 1.0.0
+
+Characters get wet from rain, snow, water, sweat, arousal and sex, and dry off gradually. Drench writes the wet look
+straight into the skin shader of body, hands, feet, head, ears and genitals. It needs no RaceMenu, no MCM and no
+Papyrus polling.
+
+Drench is the successor of WetFunction NG. It is a new mod with its own plugin, scripts and maps. WetFunction NG
+1.4.2 stays available as it is.
+
+## Requirements
+
+- Skyrim SE / AE with SKSE64 and Address Library for SKSE Plugins. Tested on AE 1.6.1170. The DLL is built
+  for SE 1.5.97 too, but nobody has run it there yet.
+- SKSE Menu Framework 3. All settings are in its menu.
+- Optional: Mu Dynamic NormalMap, for drops in relief on 3BA bodies.
+- Optional: ConsoleUtil Extended, only for the `drench` console commands.
+- Optional integrations, each found automatically: SexLab P+ / SexLab, OStim Standalone, SexLab Aroused NG /
+  OSL Aroused, Devious Devices NG, Bathing in Skyrim, SunHelm or CC Survival Mode.
+- RaceMenu is **not** required. If it is installed, Drench uses it only to remove wet overrides that WetFunction
+  left in old saves.
+
+## Installation
+
+1. Disable WetFunction NG, Wet Function Redux, OSweat, Dewpoint and their patches. They paint the same skin, so a
+   warning appears on screen if one of them is still loaded.
+2. Install this archive with your mod manager:
+   - **Main mod** is always installed.
+   - **WetFunction NG compatibility** is recommended. Mods written for WetFunction NG keep working: SexLab
+     Survival, Diary of Mine, Vitals HUD, SexLab P++ and others. It is an empty ESL `WetFunctionNG.esp`, so their
+     checks find "WetFunction NG", and a `WetFunctionNG` script that forwards every call to Drench. Install it
+     only together with Drench, never next to the real WetFunction NG.
+   - **3BA (CBBE) bodies** - pick one; the installer recommends the one that fits your setup:
+     - *With Mu Dynamic NormalMap - drops in relief (best)*: drops and streaks stand up on the 3BA body in real
+       relief, like on UBE. Needs [Mu Dynamic NormalMap](https://www.nexusmods.com/skyrimspecialedition/mods/154657):
+       it rebuilds the body's normal map from its real shape, and Drench hands it the drops as a detail map.
+     - *Without Mu Dynamic NormalMap - wet shine only*: drops and sweat drawn in the shine, close to WetFunction NG.
+   UBE has its relief either way.
+3. In game, open SKSE Menu Framework > **Drench**. The defaults suit most people.
+
+You can add Drench to an existing save. On its first start it takes your settings from `WetFunctionNG.ini` if
+there is one. It writes its own `Data/SKSE/Plugins/Drench.ini` the first time you change something in the menu.
+Wet overrides that WetFunction left in the save are removed from each character once.
+
+## What it does
+
+- **Wetness** rises from rain and snow, wading and swimming (by how deep the character stands), running,
+  fighting, spellcasting, arousal and sex. It falls when the character dries off, faster near campfires,
+  fireplaces, braziers and forges. The state goes from dry to sweaty to soaked, and the look changes smoothly.
+- **Wet maps on every skin part:** body, hands, feet, head, genitals. Each state has its own map: drops,
+  sweat, or both. Head and hand maps are matched to the body map at the neck and the wrists, so no seam shows
+  there.
+- **Bodies:** CBBE 3BA (specular maps) and UBE (normal maps with specular in alpha), female and male (HIMBO).
+  Drops are in relief on UBE, and on female 3BA bodies with Mu Dynamic NormalMap (sweat stays in the shine).
+- **Ears:** [Goam Elven Ears - Redone](https://www.nexusmods.com/skyrimspecialedition/mods/165502) in all three
+  sizes get wet maps of their own, matched to the head they sit on. Other ear and head parts that are skin get the
+  wet shine on their own maps.
+- **Genitals:** Schlongs of Skyrim, and TNG with the LDD racial meshes, each get a map drawn for their own UV
+  layout. Any other schlong gets the wet shine on its own maps.
+- **Characters:** each character can be set to *normal*, *shine only* (skin keeps its own maps and gets the wet
+  shine, for skins with scales or other details in their normal maps) or *excluded* (never wet). The setting is
+  kept in `Data/SKSE/Plugins/Drench_Actors.ini` and applies to every save. Set it on the Characters page, from the
+  console or from Papyrus. A global texture mode does the same for everyone: all maps, shine only on UBE, or shine
+  only.
+- **Glossiness** goes up to 1000.
+- **Who gets wet:** the player, followers and SexLab/OStim scene partners by default. All nearby NPCs can be
+  switched on, filtered by sex, beasts and vampires, with a radius and interval.
+- **HUD:** an optional droplet that fills with the player's wetness and shows whether it rises or falls.
+- **Saves:** wetness is kept in the SKSE co-save. Loading a save, or reverting to the main menu, puts every
+  painted character back to dry first, so nothing sticks across saves.
+- **Menu text** can be translated: copy `SKSE/Plugins/Drench/Strings_TEMPLATE.ini` to
+  `Strings_<LANGUAGE>.ini` (the game's language name, e.g. `Strings_GERMAN.ini`) and fill in the right-hand
+  sides.
+
+## Common mistakes
+
+- **Keeping WetFunction NG, Wet Function Redux, OSweat or Dewpoint enabled.** They fight Drench over the same
+  skin.
+- **Community Shaders "Advanced Skin", or Vanilla Fresnel > "Enable Phong to GGX".** Both replace the skin
+  lighting that carries the wet look. Turn them off.
+- **Renaming `WetFunctionNG.esp` from the compatibility option.** Mods look for that exact name.
+- **Looking for an MCM.** There is none. Use SKSE Menu Framework.
+
+## Console (ConsoleUtil Extended)
+
+`drench status | start | stop | soak | dry | release | report | clean | reload | stopall | shine | exclude |
+normal` act on the actor under the crosshair, or on the player. `drench report` lists every skin part with
+its live shader values and the map Drench put there. Please attach it to bug reports.
+
+## For mod authors
+
+- Papyrus: script `Drench`. It has `StartEffect`, `StopEffect`, `IsActive`, `GetWetness`, `SetWetness`,
+  `GetWetnessCap`, `ForceValues`, `GetStatus`, `SetActorMode` / `GetActorMode` ("normal", "shine",
+  "excluded"), `Bathed`, `RefreshVisuals`, `SexLabUpdate` / `SexLabOrgasm` and more. See
+  `Scripts/Source/Drench.psc`. Mods written against `WetFunctionNG` keep working through the compatibility
+  option.
+- SKSE: `Drench.dll` exports `Drench_GetPlayerGauge` (wetness, rate, thresholds, cap). It also exports the
+  same call as `WFNG_GetPlayerGauge`, with the same struct.
+
+## Logs
+
+`Documents/My Games/Skyrim Special Edition/SKSE/Drench.log`. The Diagnostics page shows the settings source,
+conflicts, the wet maps found, and every wet character.
+
+## Credits
+
+Built on the ideas of Wet Function Redux, OSweat and Dewpoint. The wet textures are the author's own.
+Skyrim SE 1.5.97 support in WetFunction NG was contributed by GSVJinx.

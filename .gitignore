@@ -1,0 +1,13 @@
+build/
+.xmake/
+dist/
+lib/
+assets/
+papyrus/out/
+papyrus/out_compat/
+plugin/
+*.pdb
+*.dll
+*.pex
+*.esp
+tools/leak_patterns.txt

@@ -214,6 +214,20 @@ namespace Drench
 	// specular one (slot 7). Empty for anything else, or when the head gets no map.
 	std::string EarTexture(std::string_view a_head, std::string_view a_earSpecular);
 
+	// A COTR face (Charmers of the Reach and the packs built on it) is told by the face geometry itself, never by a
+	// race, mesh or texture name: model-space normals and one of the COTR head topologies (3127 or 12206 vertices,
+	// whatever the sex - seen on 1823 FaceGen heads). Its UV layout is its own, so it gets maps made for it.
+	bool IsCotrHead(std::uint32_t a_vertexCount, bool a_modelSpaceNormals);
+	// The map of a COTR face for the head map a_head planned for the actor's body: "[male_]wethead<_state>(_s|_UBE_n)
+	// .dds" -> "wethead_COTR<_state>_s.dds" (women) / "male_wethead_COTR_s.dds" (men: one map). Always a specular map
+	// (slot 7): the COTR head is model-space even on a UBE body. 'fallback' is the stateless map. Empty for anything else.
+	struct CotrMaps
+	{
+		std::string texture;
+		std::string fallback;
+	};
+	CotrMaps CotrHeadTextures(std::string_view a_head);
+
 	// The tangent detail map Mu Dynamic NormalMap gets for a wet 3BA (female, specular) body map of the same state:
 	// "...\wet_<drops><sweat><pussy>_s.dds" -> "...\wet_<state>_detail_n.dds". Empty for anything else (UBE carries
 	// its relief in its own normal map; there are no male detail maps; wet_001 is never planned).

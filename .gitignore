@@ -2,10 +2,11 @@ build/
 .xmake/
 dist/
 lib/
-assets/
+/assets/
+/assets_bhunp/
 papyrus/out/
 papyrus/out_compat/
-plugin/
+/plugin/
 *.pdb
 *.dll
 *.pex

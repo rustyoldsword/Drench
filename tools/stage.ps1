@@ -59,7 +59,9 @@ $textures = @(
     'wethead_10_s', 'wethead_01_s', 'wethead_11_s', 'wethand_10_s', 'wethand_01_s', 'wethand_11_s',
     'wethead_10_UBE_n', 'wethead_01_UBE_n', 'wethead_11_UBE_n', 'wethand_10_UBE_n', 'wethand_01_UBE_n', 'wethand_11_UBE_n',
     # TNG genitals of the LDD racial meshes (tools\bake_tng.py + tools\make_tng_map.py)
-    'male_wetschlong_LDD_s'
+    'male_wetschlong_LDD_s',
+    # COTR faces: the head maps carried over to the COTR UV layout (tools\make_cotr_head.py)
+    'wethead_COTR_s', 'wethead_COTR_10_s', 'wethead_COTR_01_s', 'wethead_COTR_11_s', 'male_wethead_COTR_s'
 )
 # 3BA drops in relief through Mu Dynamic NormalMap's detail map (tools\make_mdnm_detail.py)
 $textures += 'wet_010_detail_n', 'wet_011_detail_n', 'wet_100_detail_n', 'wet_101_detail_n', 'wet_110_detail_n', 'wet_111_detail_n', 'wet_flat_detail_n'

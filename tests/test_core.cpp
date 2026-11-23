@@ -764,6 +764,34 @@ TEST_CASE("a Goam ear wears the ear map made for the head map it sits on")
 	CHECK(EarTexture(head + "male_wethead_s.dds", R"(TEXTURES\GOAM\GOAMNEWELVENEARS\GOAMEARSM_S.DDS)") == head + "male_wetear_GoamSm_s.dds");
 }
 
+TEST_CASE("a COTR face is told by its geometry: model-space normals and a COTR vertex count")
+{
+	CHECK(IsCotrHead(12206, true));
+	CHECK(IsCotrHead(3127, true));
+	CHECK_FALSE(IsCotrHead(12206, false));  // a tangent-space head of that size is not COTR
+	CHECK_FALSE(IsCotrHead(3832, true));    // HPH
+	CHECK_FALSE(IsCotrHead(996, true));     // vanilla
+	CHECK_FALSE(IsCotrHead(11498, false));  // UBE
+}
+
+TEST_CASE("a COTR face wears the COTR map of the state planned for the body, always a specular one")
+{
+	const std::string dir = R"(textures\actors\character\Drench\)";
+	const auto maps = [&](const std::string& a_head) { return CotrHeadTextures(dir + a_head); };
+	CHECK(maps("wethead_10_s.dds").texture == dir + "wethead_COTR_10_s.dds");
+	CHECK(maps("wethead_10_s.dds").fallback == dir + "wethead_COTR_s.dds");
+	CHECK(maps("wethead_11_UBE_n.dds").texture == dir + "wethead_COTR_11_s.dds");  // UBE body, COTR head
+	CHECK(maps("WETHEAD_01_S.DDS").texture == dir + "wethead_COTR_01_s.dds");
+	CHECK(maps("wethead_s.dds").texture == dir + "wethead_COTR_s.dds");
+	CHECK(maps("wethead_s.dds").fallback.empty());
+	CHECK(maps("male_wethead_s.dds").texture == dir + "male_wethead_COTR_s.dds");
+	CHECK(maps("male_wethead_UBE_n.dds").texture == dir + "male_wethead_COTR_s.dds");
+	CHECK(maps("male_wethead_s.dds").fallback.empty());
+	CHECK(maps("wethand_10_s.dds").texture.empty());
+	CHECK(maps("wethead_10.dds").texture.empty());
+	CHECK(CotrHeadTextures("").texture.empty());
+}
+
 TEST_CASE("other head parts, an unplanned head and unknown ears get no ear map")
 {
 	const std::string head = R"(textures\actors\character\Drench\wethead_10_s.dds)";

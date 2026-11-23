@@ -385,6 +385,38 @@ namespace Drench
 		return std::format("{}{}wetear_Goam{}{}{}_s.dds", kWetFolder, male ? "male_" : "", size, rest, ube ? "_UBE" : "");
 	}
 
+	bool IsCotrHead(std::uint32_t a_vertexCount, bool a_modelSpaceNormals)
+	{
+		return a_modelSpaceNormals && (a_vertexCount == 3127 || a_vertexCount == 12206);
+	}
+
+	CotrMaps CotrHeadTextures(std::string_view a_head)
+	{
+		using namespace std::literals;
+		const auto  slash = a_head.find_last_of("\\/");
+		std::string head(slash == std::string_view::npos ? a_head : a_head.substr(slash + 1));
+		std::ranges::transform(head, head.begin(), [](char a_char) { return static_cast<char>(std::tolower(static_cast<unsigned char>(a_char))); });
+		const bool male = head.starts_with("male_wethead");
+		if (!male && !head.starts_with("wethead")) {
+			return {};
+		}
+		std::string_view rest(head);
+		rest.remove_prefix(male ? "male_wethead"sv.size() : "wethead"sv.size());
+		const bool ube = rest.ends_with("_ube_n.dds");
+		if (!ube && !rest.ends_with("_s.dds")) {
+			return {};
+		}
+		rest.remove_suffix(ube ? "_ube_n.dds"sv.size() : "_s.dds"sv.size());  // the state: "", "_10" ...
+		if (male) {
+			return { std::format("{}male_wethead_COTR_s.dds", kWetFolder), {} };
+		}
+		auto single = std::format("{}wethead_COTR_s.dds", kWetFolder);
+		if (rest.empty()) {
+			return { std::move(single), {} };
+		}
+		return { std::format("{}wethead_COTR{}_s.dds", kWetFolder, rest), std::move(single) };
+	}
+
 	std::string DetailTexture(std::string_view a_bodyTexture)
 	{
 		using namespace std::literals;

@@ -1,4 +1,4 @@
-# Drench - Wet Skin Framework 1.0.0
+# Drench - Wet Skin Framework 1.0.1
 
 Characters get wet from rain, snow, water, sweat, arousal and sex, and dry off gradually. Drench writes the wet look
 straight into the skin shader of body, hands, feet, head, ears and genitals. It needs no RaceMenu, no MCM and no
@@ -29,12 +29,19 @@ Drench is the successor of WetFunction NG. It is a new mod with its own plugin, 
      Survival, Diary of Mine, Vitals HUD, SexLab P++ and others. It is an empty ESL `WetFunctionNG.esp`, so their
      checks find "WetFunction NG", and a `WetFunctionNG` script that forwards every call to Drench. Install it
      only together with Drench, never next to the real WetFunction NG.
-   - **3BA (CBBE) bodies** - pick one; the installer recommends the one that fits your setup:
-     - *With Mu Dynamic NormalMap - drops in relief (best)*: drops and streaks stand up on the 3BA body in real
-       relief, like on UBE. Needs [Mu Dynamic NormalMap](https://www.nexusmods.com/skyrimspecialedition/mods/154657):
+   - **Female body** - pick the one your game uses; the installer recommends the 3BA one that fits your setup:
+     - *3BA (CBBE) with Mu Dynamic NormalMap - drops in relief (best)*: drops and streaks stand up on the 3BA body
+       in real relief, like on UBE. Needs [Mu Dynamic NormalMap](https://www.nexusmods.com/skyrimspecialedition/mods/154657):
        it rebuilds the body's normal map from its real shape, and Drench hands it the drops as a detail map.
-     - *Without Mu Dynamic NormalMap - wet shine only*: drops and sweat drawn in the shine, close to WetFunction NG.
-   UBE has its relief either way.
+     - *3BA (CBBE) without Mu Dynamic NormalMap - wet shine only*: drops and sweat drawn in the shine, close to
+       WetFunction NG.
+     - *BHUNP / UNP - wet shine only*: for BHUNP, UUNP and UNP bodies. The wet body and hand maps are redrawn for
+       the UNP UV layout and replace the 3BA ones.
+   - **UBE bodies** - only if your game has UBE characters. Recommended when `UBE_AllRace.esp` is active. Without
+     it a UBE character still gets the wet shine.
+
+   COTR heads (Charmers of the Reach and the NPC replacers built on it) are always installed: many replacers bake
+   COTR heads into their FaceGen, so you may have them without knowing it.
 3. In game, open SKSE Menu Framework > **Drench**. The defaults suit most people.
 
 You can add Drench to an existing save. On its first start it takes your settings from `WetFunctionNG.ini` if
@@ -49,8 +56,11 @@ Wet overrides that WetFunction left in the save are removed from each character 
 - **Wet maps on every skin part:** body, hands, feet, head, genitals. Each state has its own map: drops,
   sweat, or both. Head and hand maps are matched to the body map at the neck and the wrists, so no seam shows
   there.
-- **Bodies:** CBBE 3BA (specular maps) and UBE (normal maps with specular in alpha), female and male (HIMBO).
-  Drops are in relief on UBE, and on female 3BA bodies with Mu Dynamic NormalMap (sweat stays in the shine).
+- **Bodies:** CBBE 3BA and BHUNP / UNP (specular maps) and UBE (normal maps with specular in alpha), female and
+  male (HIMBO). Drops are in relief on UBE, and on female 3BA bodies with Mu Dynamic NormalMap (sweat stays in the
+  shine).
+- **Heads:** vanilla and High Poly Head, UBE, and COTR heads, which have a UV layout of their own. A COTR face is
+  recognised by its mesh, whatever the race, the NPC replacer or the texture names.
 - **Ears:** [Goam Elven Ears - Redone](https://www.nexusmods.com/skyrimspecialedition/mods/165502) in all three
   sizes get wet maps of their own, matched to the head they sit on. Other ear and head parts that are skin get the
   wet shine on their own maps.

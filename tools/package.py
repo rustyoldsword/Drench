@@ -1,8 +1,14 @@
 r"""Pack dist\Drench (made by tools\stage.ps1) into the release archive: a FOMOD with an explicit Main mod page.
 
-  core/    everything except the compatibility layer (always installed)
+  core/    everything else (always installed): the plugin, the 3BA / CBBE, male, head, COTR head and ear maps
   compat/  WetFunctionNG.esp (empty ESL stub) + the forwarding WetFunctionNG script (recommended option)
+  relief/  the 3BA relief maps for Mu Dynamic NormalMap (one of the female body options)
+  bhunp/   the female body and hand maps in the BHUNP / UNP layout, under the 3BA maps' names (tools\make_bhunp_maps.py;
+           not part of dist\Drench, taken from assets_bhunp) - they replace core's 3BA ones (one of the body options)
+  ube/     every UBE map, female and male (an option of its own, recommended only when UBE_AllRace.esp is active)
   fomod/   info.xml, ModuleConfig.xml - UTF-8 without an XML declaration (Vortex chokes on ElementTree's one)
+COTR head maps stay in core on purpose: NPC replacers bake COTR heads into their FaceGen, often without the user
+knowing it, so nobody should have to pick them.
 
 Then the install path is tested the way a user meets it: the archive is extracted into an empty folder, the
 installer's choices are read from ModuleConfig.xml and carried out, and the result must equal dist\Drench file for
@@ -27,13 +33,26 @@ NAME = "Drench - Wet Skin Framework"
 ARCHIVE = Path.home() / "Desktop" / f"{NAME} {VERSION}.7z"
 SEVEN_ZIP = next(p for p in (Path(r"C:\Program Files\7-Zip\7z.exe"), Path(r"C:\Program Files (x86)\7-Zip\7z.exe")) if p.exists())
 COMPAT = {Path("WetFunctionNG.esp"), Path("Scripts/WetFunctionNG.pex"), Path("Scripts/Source/WetFunctionNG.psc")}
-MDNM_OPTION = "With Mu Dynamic NormalMap - drops in relief (best)"
-PLAIN_OPTION = "Without Mu Dynamic NormalMap - wet shine only"
+MDNM_OPTION = "3BA (CBBE) with Mu Dynamic NormalMap - drops in relief (best)"
+PLAIN_OPTION = "3BA (CBBE) without Mu Dynamic NormalMap - wet shine only"
+BHUNP_OPTION = "BHUNP / UNP - wet shine only"
+UBE_OPTION = "UBE bodies"
+MAPS = Path("textures/actors/character/Drench")
+BHUNP = ROOT / "assets_bhunp"
 
 
 def is_relief(rel):
     """The 3BA relief maps for Mu Dynamic NormalMap (tools\\make_mdnm_detail.py): wet_<state>_detail_n.dds."""
-    return rel.parent == Path("textures/actors/character/Drench") and rel.name.endswith("_detail_n.dds")
+    return rel.parent == MAPS and rel.name.endswith("_detail_n.dds")
+
+
+def is_ube(rel):
+    """A UBE map: wet_*_UBE_n, wethand/wethead*_UBE_n, male_*_UBE_n, wetear_*_UBE_s ..."""
+    return rel.parent == MAPS and "_ube_" in rel.name.lower()
+
+
+def folder_of(rel):
+    return "compat" if rel in COMPAT else "relief" if is_relief(rel) else "ube" if is_ube(rel) else "core"
 # strings that must never ship (build machine names, local paths): one per line in tools\leak_patterns.txt
 _PATTERNS = Path(__file__).with_name("leak_patterns.txt")
 LEAKS = [re.compile(line.strip().encode(), re.I) for line in (_PATTERNS.read_text(encoding="utf-8").splitlines() if _PATTERNS.exists() else []) if line.strip()]
@@ -66,8 +85,9 @@ def module_config():
     plugin = ET.SubElement(plugins, "plugin", name=f"Drench - Wet Skin Framework {VERSION}")
     ET.SubElement(plugin, "description").text = (
         "Wetness from rain, snow, water, sweat, arousal and sex, written straight into the skin shader: wet maps on "
-        "body, hands, feet, head, Goam ears and genitals for 3BA and UBE, female and male. Settings in SKSE Menu "
-        "Framework. Always installed. Disable WetFunction NG, Wet Function Redux, OSweat and Dewpoint.")
+        "body, hands, feet, head, Goam ears and genitals, female and male, including COTR heads (NPC replacers often "
+        "bake them in). Settings in SKSE Menu Framework. Always installed. Pick your female body and UBE below. "
+        "Disable WetFunction NG, Wet Function Redux, OSweat and Dewpoint.")
     ET.SubElement(plugin, "files")  # the files themselves are the required core folder
     ET.SubElement(ET.SubElement(plugin, "typeDescriptor"), "type", name="Required")
 
@@ -82,30 +102,52 @@ def module_config():
     ET.SubElement(files, "folder", source="compat", destination="", priority="0")
     ET.SubElement(ET.SubElement(plugin, "typeDescriptor"), "type", name="Recommended")
 
-    # 3BA: drops in relief through Mu Dynamic NormalMap, or the wet shine alone as in WetFunction NG. The installer
-    # recommends the one that fits: the relief when MuDynamicNormalMap.dll is installed.
-    relief = ET.SubElement(groups, "group", name="3BA (CBBE) bodies", type="SelectExactlyOne")
-    plugins = ET.SubElement(relief, "plugins", order="Explicit")
-    for name, description, folder, with_mdnm in (
+    # The female body the game uses (one per game): 3BA with relief through Mu Dynamic NormalMap, 3BA shine only, or
+    # BHUNP / UNP (its own UV layout: its maps replace the 3BA ones under the same names). The installer recommends
+    # the relief when MuDynamicNormalMap.dll is installed, 3BA shine otherwise; BHUNP is never pre-picked.
+    body = ET.SubElement(groups, "group", name="Female body", type="SelectExactlyOne")
+    plugins = ET.SubElement(body, "plugins", order="Explicit")
+    for name, description, folder, kind_default, kind_with_mdnm in (
         (MDNM_OPTION,
          "Best quality. Drops and streaks stand up on the 3BA body in real relief, like on UBE, on top of the shine. "
          "Needs Mu Dynamic NormalMap: Drench hands it the drops as a detail map, and it rebuilds the body's normal map "
-         "from its real shape. Adds 4K relief maps.", "relief", True),
+         "from its real shape. Adds 4K relief maps.", "relief", "Optional", "Recommended"),
         (PLAIN_OPTION,
-         "Without Mu Dynamic NormalMap. The 3BA body gets the wet shine maps only - drops and sweat drawn in the "
-         "shine, close to WetFunction NG. UBE keeps its relief either way.", None, False),
+         "3BA / CBBE without Mu Dynamic NormalMap. The body gets the wet shine maps only - drops and sweat drawn in "
+         "the shine, close to WetFunction NG.", None, "Recommended", "Optional"),
+        (BHUNP_OPTION,
+         "BHUNP, UUNP or UNP bodies (the UNP UV layout). The wet body and hand maps are redrawn for that layout and "
+         "replace the 3BA ones. Wet shine only, no relief. Do not pick it for 3BA / CBBE bodies.", "bhunp", "Optional",
+         "Optional"),
     ):
         plugin = ET.SubElement(plugins, "plugin", name=name)
         ET.SubElement(plugin, "description").text = description
         files = ET.SubElement(plugin, "files")
         if folder:
-            ET.SubElement(files, "folder", source=folder, destination="", priority="0")
+            ET.SubElement(files, "folder", source=folder, destination="", priority="1")
         kind = ET.SubElement(ET.SubElement(plugin, "typeDescriptor"), "dependencyType")
-        ET.SubElement(kind, "defaultType", name="Optional" if with_mdnm else "Recommended")
+        ET.SubElement(kind, "defaultType", name=kind_default)
         pattern = ET.SubElement(ET.SubElement(kind, "patterns"), "pattern")
         deps = ET.SubElement(pattern, "dependencies", operator="And")
         ET.SubElement(deps, "fileDependency", file="SKSE\\Plugins\\MuDynamicNormalMap.dll", state="Active")
-        ET.SubElement(pattern, "type", name="Recommended" if with_mdnm else "Optional")
+        ET.SubElement(pattern, "type", name=kind_with_mdnm)
+
+    # UBE: only for games that have it - recommended when UBE's plugin is active, a free choice otherwise
+    ube = ET.SubElement(groups, "group", name="UBE", type="SelectAny")
+    plugins = ET.SubElement(ube, "plugins", order="Explicit")
+    plugin = ET.SubElement(plugins, "plugin", name=UBE_OPTION)
+    ET.SubElement(plugin, "description").text = (
+        "Wet maps for UBE (Unified Body Enhancement) women and men: body, hands, feet and head with drops in relief, "
+        "and the Goam ear maps for UBE heads. Only needed if your game has UBE characters. Without it a UBE "
+        "character still gets the wet shine.")
+    files = ET.SubElement(plugin, "files")
+    ET.SubElement(files, "folder", source="ube", destination="", priority="0")
+    kind = ET.SubElement(ET.SubElement(plugin, "typeDescriptor"), "dependencyType")
+    ET.SubElement(kind, "defaultType", name="Optional")
+    pattern = ET.SubElement(ET.SubElement(kind, "patterns"), "pattern")
+    deps = ET.SubElement(pattern, "dependencies", operator="And")
+    ET.SubElement(deps, "fileDependency", file="UBE_AllRace.esp", state="Active")
+    ET.SubElement(pattern, "type", name="Recommended")
     return ET.ElementTree(root)
 
 
@@ -127,20 +169,23 @@ def write_xml(tree, path):
     ET.parse(path)
 
 
-def install(extracted, target, mdnm):
-    """What a FOMOD installer does: the required folder, every plugin typed Required/Recommended, and in the 3BA
-    group the option the user's setup gets (mdnm: Mu Dynamic NormalMap installed or not)."""
+def install(extracted, target, body, ube):
+    """What a FOMOD installer does: the required folder, every plugin typed Required/Recommended, the female body
+    option picked (body: MDNM_OPTION / PLAIN_OPTION / BHUNP_OPTION) and UBE or not; folders in priority order, so
+    a higher-priority option's files replace core's."""
     config = ET.parse(extracted / "fomod" / "ModuleConfig.xml").getroot()
-    folders = [(f.get("source"), f.get("destination")) for f in config.find("requiredInstallFiles")]
+    folders = [(int(f.get("priority", 0)), f.get("source"), f.get("destination")) for f in config.find("requiredInstallFiles")]
     for plugin in config.iter("plugin"):
         plain = plugin.find("typeDescriptor/type")
         if plain is not None:
             chosen = plain.get("name") in ("Required", "Recommended")
+        elif plugin.get("name") == UBE_OPTION:
+            chosen = ube
         else:
-            chosen = plugin.get("name") == (MDNM_OPTION if mdnm else PLAIN_OPTION)
+            chosen = plugin.get("name") == body
         if chosen:
-            folders += [(f.get("source"), f.get("destination")) for f in plugin.find("files")]
-    for source, destination in folders:
+            folders += [(int(f.get("priority", 0)), f.get("source"), f.get("destination")) for f in plugin.find("files")]
+    for _, source, destination in sorted(folders, key=lambda f: f[0]):
         shutil.copytree(extracted / source, target / destination, dirs_exist_ok=True)
     return config
 
@@ -156,6 +201,9 @@ def leaks(root):
 
 
 def main():
+    global ARCHIVE
+    if "--archive" in sys.argv:  # a trial build elsewhere (the Desktop archive is made only for a release)
+        ARCHIVE = Path(sys.argv[sys.argv.index("--archive") + 1])
     if not STAGE.exists():
         sys.exit("dist\\Drench is missing: run tools\\stage.ps1")
     staged = tree(STAGE)
@@ -163,7 +211,13 @@ def main():
     if OUT.exists():
         shutil.rmtree(OUT)
     for rel, path in staged.items():
-        dst = OUT / ("compat" if rel in COMPAT else "relief" if is_relief(rel) else "core") / rel
+        dst = OUT / folder_of(rel) / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, dst)
+    bhunp = tree(BHUNP)
+    assert bhunp and all(rel in staged for rel in bhunp), f"BHUNP maps must replace 3BA ones: {set(bhunp) - set(staged)}"
+    for rel, path in bhunp.items():
+        dst = OUT / "bhunp" / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, dst)
     write_xml(module_config(), OUT / "fomod" / "ModuleConfig.xml")
@@ -182,23 +236,37 @@ def main():
         subprocess.run([str(SEVEN_ZIP), "x", str(ARCHIVE), f"-o{extracted}"], check=True, stdout=subprocess.DEVNULL)
         assert set(tree(extracted)) == set(tree(OUT)), "the archive does not hold what was packed"
         relief = {rel for rel in staged if is_relief(rel)}
-        assert relief, "no relief maps staged"
-        for mdnm, expected in ((True, set(staged)), (False, set(staged) - relief)):
-            installed = Path(tmp) / ("Data-mdnm" if mdnm else "Data-plain")
-            install(extracted, installed, mdnm)
+        ube = {rel for rel in staged if is_ube(rel)}
+        assert relief and ube, "no relief or no UBE maps staged"
+        cotr = {rel for rel in staged if "_cotr" in rel.name.lower()}
+        assert cotr, "no COTR head maps staged"
+        everything = set(staged)
+        cases = (
+            (MDNM_OPTION, True, everything, {}),
+            (MDNM_OPTION, False, everything - ube, {}),
+            (PLAIN_OPTION, True, everything - relief, {}),
+            (PLAIN_OPTION, False, everything - relief - ube, {}),
+            (BHUNP_OPTION, True, everything - relief, bhunp),
+            (BHUNP_OPTION, False, everything - relief - ube, bhunp),
+        )
+        for n, (body, with_ube, expected, replaced) in enumerate(cases):
+            installed = Path(tmp) / f"Data-{n}"
+            install(extracted, installed, body, with_ube)
             got = tree(installed)
-            assert set(got) == expected, f"{'with' if mdnm else 'without'} MDNM: missing {expected - set(got)}, extra {set(got) - expected}"
-            bad = [str(rel) for rel in expected if md5(staged[rel]) != md5(got[rel])]
-            assert not bad, f"differ after install: {bad}"
+            label = f"{body} / UBE {with_ube}"
+            assert set(got) == expected, f"{label}: missing {expected - set(got)}, extra {set(got) - expected}"
+            want = {rel: (replaced.get(rel) or staged[rel]) for rel in expected}
+            bad = [str(rel) for rel in expected if md5(want[rel]) != md5(got[rel])]
+            assert not bad, f"{label}: differ after install: {bad}"
+            assert cotr <= set(got), f"{label}: COTR maps missing"
         problems = leaks(extracted)
         assert not problems, f"build-machine text in the archive: {problems}"
-        core_only = Path(tmp) / "CoreOnly"
-        shutil.copytree(extracted / "core", core_only)
-        assert not (COMPAT & set(tree(core_only))), "compatibility files leaked into core"
-        assert not any(is_relief(rel) for rel in tree(core_only)), "relief maps leaked into core"
+        core_only = set(tree(extracted / "core"))
+        assert not (COMPAT & core_only), "compatibility files leaked into core"
+        assert not any(is_relief(rel) or is_ube(rel) for rel in core_only), "relief or UBE maps leaked into core"
 
-    print(f"{len(staged)} files ({len(COMPAT)} compatibility, {len(relief)} 3BA relief); install test with and without "
-          f"MDNM: equal to the build, no leaks")
+    print(f"{len(staged)} files ({len(COMPAT)} compatibility, {len(relief)} 3BA relief, {len(ube)} UBE, {len(cotr)} COTR in core),"
+          f" {len(bhunp)} BHUNP replacements; install test of all 6 choices: equal to the build, no leaks")
     print(f"{ARCHIVE.name}: {ARCHIVE.stat().st_size:,} bytes, MD5 {md5(ARCHIVE).upper()}")
     print(f"Drench.dll MD5 {md5(STAGE / 'SKSE' / 'Plugins' / 'Drench.dll').upper()}")
 
